@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 from models import db
+from auth import auth_bp          
 
 load_dotenv()
 
@@ -13,12 +14,14 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 
-    CORS(app)  # permite o Next.js (porta 3000) falar com o Flask
+    CORS(app)
     JWTManager(app)
     db.init_app(app)
 
+    app.register_blueprint(auth_bp)   # novo
+
     with app.app_context():
-        db.create_all()  # cria as tabelas no Neon se ainda não existirem
+        db.create_all()
 
     @app.route("/api/health")
     def health():
@@ -28,4 +31,4 @@ def create_app():
 
 
 if __name__ == "__main__":
-    create_app().run(debug=True) 
+    create_app().run(debug=True)
