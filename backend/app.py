@@ -1,0 +1,31 @@
+import os
+from flask import Flask, jsonify
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+from models import db
+
+load_dotenv()
+
+
+def create_app():
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+
+    CORS(app)  # permite o Next.js (porta 3000) falar com o Flask
+    JWTManager(app)
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()  # cria as tabelas no Neon se ainda não existirem
+
+    @app.route("/api/health")
+    def health():
+        return jsonify({"status": "ok"})
+
+    return app
+
+
+if __name__ == "__main__":
+    create_app().run(debug=True) 
