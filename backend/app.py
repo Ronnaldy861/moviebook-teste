@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from models import db
 from auth import auth_bp
 from works import works_bp
+from interactions import interactions_bp
 
 
 load_dotenv()
@@ -26,6 +27,7 @@ def create_app():
     # Registra cada Blueprint apenas uma vez
     app.register_blueprint(auth_bp)
     app.register_blueprint(works_bp)
+    app.register_blueprint(interactions_bp)
 
     with app.app_context():
         db.create_all()
