@@ -3,21 +3,26 @@ from functools import wraps
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func
-from models import db, User, Work, Genre, Favorite, Rating
+from models import db, User, Work, Genre, Favorite, Rating, work_genre
 from works import work_to_dict
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
 
 def admin_required(fn):
-    """Exige login E que o usuário seja administrador."""
+    """Exige login e que o usuário seja administrador."""
     @wraps(fn)
     @jwt_required()
     def wrapper(*args, **kwargs):
         user = db.session.get(User, int(get_jwt_identity()))
+
         if not user or not user.is_admin:
-            return jsonify({"error": "Acesso restrito a administradores."}), 403
+            return jsonify({
+                "error": "Acesso restrito a administradores."
+            }), 403
+
         return fn(*args, **kwargs)
+
     return wrapper
 
 
@@ -35,39 +40,115 @@ def edit_work(work_id):
 
     if "title" in data:
         title = (data.get("title") or "").strip()
+
         if not title:
-            return jsonify({"error": "O título não pode ficar vazio."}), 400
+            return jsonify({
+                "error": "O título não pode ficar vazio."
+            }), 400
+
         work.title = title
 
     if "type" in data:
         work_type = (data.get("type") or "").strip().lower()
+
         if work_type not in ("filme", "livro"):
-            return jsonify({"error": "O tipo deve ser 'filme' ou 'livro'."}), 400
+            return jsonify({
+                "error": "O tipo deve ser 'filme' ou 'livro'."
+            }), 400
+
         work.type = work_type
 
     if "synopsis" in data:
         work.synopsis = (data.get("synopsis") or "").strip()
 
-    if "author" in data:
-        author = (data.get("author") or "").strip()
-        work.author = author if work.type == "livro" else None
+    if "creator" in data:
+        creator = (data.get("creator") or "").strip()
+        work.creator = creator or None
+        work.author = creator if work.type == "livro" else None
+
+    if "company" in data:
+        company = (data.get("company") or "").strip()
+        work.company = company or None
 
     if "cover_url" in data:
-        work.cover_url = (data.get("cover_url") or "").strip()
+        cover_url = (data.get("cover_url") or "").strip()
+
+        if len(cover_url) > 700000:
+            return jsonify({
+                "error": "A imagem enviada é muito grande."
+            }), 400
+
+        work.cover_url = cover_url or None
 
     if "year" in data:
         try:
-            work.year = int(data["year"]) if data["year"] not in (None, "") else None
+            work.year = (
+                int(data["year"])
+                if data["year"] not in (None, "")
+                else None
+            )
         except (ValueError, TypeError):
             return jsonify({"error": "O ano deve ser um número."}), 400
 
-    if "genre_id" in data:
-        genre_id = data["genre_id"]
-        if genre_id and not db.session.get(Genre, genre_id):
-            return jsonify({"error": "Gênero inválido."}), 400
-        work.genre_id = genre_id or None
+    if "length" in data:
+        try:
+            work.length = (
+                int(data["length"])
+                if data["length"] not in (None, "")
+                else None
+            )
+        except (ValueError, TypeError):
+            return jsonify({
+                "error": "Duração ou páginas deve ser um número inteiro."
+            }), 400
 
-    # Filmes não possuem autor.
+        if work.length is not None and work.length < 1:
+            return jsonify({
+                "error": "Duração ou quantidade de páginas deve ser positiva."
+            }), 400
+
+    if "age_rating" in data:
+        age_rating = (data.get("age_rating") or "").strip()
+
+        if age_rating not in ("Livre", "10", "12", "15", "18"):
+            return jsonify({
+                "error": "Classificação indicativa inválida."
+            }), 400
+
+        work.age_rating = age_rating
+
+    if "genre_ids" in data:
+        genre_ids = data["genre_ids"]
+
+        if not isinstance(genre_ids, list):
+            return jsonify({
+                "error": "Os gêneros devem ser enviados como uma lista."
+            }), 400
+
+        try:
+            genre_ids = list(dict.fromkeys(
+                int(value) for value in genre_ids
+            ))
+        except (ValueError, TypeError):
+            return jsonify({
+                "error": "Um ou mais gêneros são inválidos."
+            }), 400
+
+        genres = (
+            Genre.query.filter(Genre.id.in_(genre_ids)).all()
+            if genre_ids else []
+        )
+
+        if len(genres) != len(genre_ids):
+            return jsonify({
+                "error": "Um ou mais gêneros não existem."
+            }), 400
+
+        work.genres = genres
+
+        # Mantém compatibilidade temporária com o campo antigo.
+        work.genre_id = genre_ids[0] if genre_ids else None
+
     if work.type == "filme":
         work.author = None
 
@@ -87,9 +168,13 @@ def create_genre():
     name = (request.get_json() or {}).get("name", "").strip()
 
     if not name:
-        return jsonify({"error": "O nome do gênero é obrigatório."}), 400
+        return jsonify({
+            "error": "O nome do gênero é obrigatório."
+        }), 400
 
-    if Genre.query.filter(func.lower(Genre.name) == name.lower()).first():
+    if Genre.query.filter(
+        func.lower(Genre.name) == name.lower()
+    ).first():
         return jsonify({"error": "Esse gênero já existe."}), 409
 
     genre = Genre(name=name)
@@ -108,17 +193,25 @@ def rename_genre(genre_id):
     genre = db.session.get(Genre, genre_id)
 
     if not genre:
-        return jsonify({"error": "Gênero não encontrado."}), 404
+        return jsonify({
+            "error": "Gênero não encontrado."
+        }), 404
 
     name = (request.get_json() or {}).get("name", "").strip()
 
     if not name:
-        return jsonify({"error": "O nome do gênero é obrigatório."}), 400
+        return jsonify({
+            "error": "O nome do gênero é obrigatório."
+        }), 400
 
-    other = Genre.query.filter(func.lower(Genre.name) == name.lower()).first()
+    other = Genre.query.filter(
+        func.lower(Genre.name) == name.lower()
+    ).first()
 
     if other and other.id != genre.id:
-        return jsonify({"error": "Já existe um gênero com esse nome."}), 409
+        return jsonify({
+            "error": "Já existe um gênero com esse nome."
+        }), 409
 
     genre.name = name
     db.session.commit()
@@ -135,13 +228,20 @@ def delete_genre(genre_id):
     genre = db.session.get(Genre, genre_id)
 
     if not genre:
-        return jsonify({"error": "Gênero não encontrado."}), 404
+        return jsonify({
+            "error": "Gênero não encontrado."
+        }), 404
 
-    em_uso = Work.query.filter_by(genre_id=genre_id).count()
+    em_uso = Work.query.filter(
+        Work.genres.any(Genre.id == genre_id)
+    ).count()
 
     if em_uso > 0:
         return jsonify({
-            "error": f"Não é possível excluir: {em_uso} obra(s) usam este gênero."
+            "error": (
+                f"Não é possível excluir: "
+                f"{em_uso} obra(s) usam este gênero."
+            )
         }), 409
 
     db.session.delete(genre)
@@ -155,16 +255,20 @@ def delete_genre(genre_id):
 @admin_bp.route("/stats", methods=["GET"])
 @admin_required
 def stats():
-    # Obras por gênero (inclui gêneros com 0 obras).
     por_genero = (
-        db.session.query(Genre.name, func.count(Work.id))
-        .outerjoin(Work, Work.genre_id == Genre.id)
+        db.session.query(
+            Genre.name,
+            func.count(work_genre.c.work_id)
+        )
+        .outerjoin(
+            work_genre,
+            work_genre.c.genre_id == Genre.id
+        )
         .group_by(Genre.id, Genre.name)
-        .order_by(func.count(Work.id).desc())
+        .order_by(func.count(work_genre.c.work_id).desc())
         .all()
     )
 
-    # Mais bem avaliadas.
     mais_bem_avaliadas = (
         db.session.query(
             Work.id,
@@ -182,7 +286,6 @@ def stats():
         .all()
     )
 
-    # Mais favoritadas.
     mais_favoritadas = (
         db.session.query(
             Work.id,
@@ -207,20 +310,24 @@ def stats():
             "ratings": Rating.query.count(),
         },
         "works_by_genre": [
-            {"genre": g, "total": t}
-            for g, t in por_genero
+            {"genre": genre, "total": total}
+            for genre, total in por_genero
         ],
         "top_rated": [
             {
-                "id": i,
-                "title": t,
-                "avg": round(float(a), 1),
-                "count": c
+                "id": work_id,
+                "title": title,
+                "avg": round(float(avg), 1),
+                "count": count
             }
-            for i, t, a, c in mais_bem_avaliadas
+            for work_id, title, avg, count in mais_bem_avaliadas
         ],
         "most_favorited": [
-            {"id": i, "title": t, "total": c}
-            for i, t, c in mais_favoritadas
+            {
+                "id": work_id,
+                "title": title,
+                "total": total
+            }
+            for work_id, title, total in mais_favoritadas
         ],
     })
