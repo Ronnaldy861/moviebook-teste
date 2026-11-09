@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 from profile import profile_bp
+from admin import admin_bp
 
 from models import db
 from auth import auth_bp
@@ -30,6 +31,7 @@ def create_app():
     app.register_blueprint(works_bp)
     app.register_blueprint(interactions_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(admin_bp)
 
     with app.app_context():
         db.create_all()
