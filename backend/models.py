@@ -11,6 +11,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    phone = db.Column(db.String(15))               
+    age = db.Column(db.Integer) 
 
 
 class Genre(db.Model):
@@ -24,6 +26,7 @@ class Work(db.Model):
     type = db.Column(db.String(10), nullable=False)  # "filme" ou "livro"
     synopsis = db.Column(db.Text)
     year = db.Column(db.Integer)
+    author = db.Column(db.String(255))
     cover_url = db.Column(db.String(500))
     genre_id = db.Column(db.Integer, db.ForeignKey("genre.id"))
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))

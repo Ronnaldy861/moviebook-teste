@@ -1,69 +1,114 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Navbar from "@/components/Navbar";
+import PosterCard from "@/components/PosterCard";
+import BookRow from "@/components/BookRow";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+import type { Work } from "@/lib/types";
+
+const byRating = (a: Work, b: Work) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0);
 
 export default function Home() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const [works, setWorks] = useState<Work[]>([]);
+  const [favCount, setFavCount] = useState(0);
+
+  useEffect(() => {
+    if (!loading && !user) router.push("/login");
+  }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    api<Work[]>("/api/works").then(setWorks).catch(console.error);
+    api<Work[]>("/api/favorites").then((f) => setFavCount(f.length)).catch(console.error);
+  }, [user]);
+
+  if (loading || !user) return null;
+
+  const movies = works.filter((w) => w.type === "filme");
+  const books = works.filter((w) => w.type === "livro");
+  const topMovies = [...movies].sort(byRating).slice(0, 5);
+  const topBooks = [...books].sort(byRating).slice(0, 5);
+  const newBooks = books.slice(0, 5); // a API já devolve os mais recentes primeiro
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <>
+      <Navbar />
+      <main className="container py-4" style={{ maxWidth: 1240 }}>
+        {/* HERO */}
+        <section className="hero mb-5">
+          <span className="pill-badge mb-4">Bem-vindo de volta, {user.name.split(" ")[0]}</span>
+          <h1 className="serif fw-bold mb-3" style={{ fontSize: "clamp(2.2rem, 5vw, 3.4rem)", maxWidth: 420, lineHeight: 1.15 }}>
+            Seu universo de filmes e livros
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p style={{ color: "#6f87c9" }}>
+            Gerencie seu catálogo, descubra novidades e compartilhe suas resenhas.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="d-flex flex-wrap justify-content-between align-items-end gap-4 mt-4">
+            <Link href="/obra/nova" className="btn-accent text-decoration-none">+ Adicionar obra</Link>
+            <div className="d-flex gap-4 text-center">
+              <div className="hero-stat"><strong>{movies.length}</strong><span>Filmes</span></div>
+              <div className="hero-stat"><strong>{books.length}</strong><span>Livros</span></div>
+              <div className="hero-stat"><strong>{favCount}</strong><span>Favoritos</span></div>
+            </div>
+          </div>
+        </section>
+
+        {/* FILMES */}
+        <section className="mb-5">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex align-items-center gap-2">
+              <h2 className="section-title m-0">Filmes Recomendados</h2>
+              <span className="count-badge">{topMovies.length}</span>
+            </div>
+            <Link href="/filmes" className="see-all">Ver todos <i className="bi bi-arrow-right" /></Link>
+          </div>
+          {topMovies.length === 0 ? (
+            <p className="text-muted-mb">Nenhum filme cadastrado ainda.</p>
+          ) : (
+            <div className="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-4">
+              {topMovies.map((w) => (
+                <div className="col" key={w.id}><PosterCard work={w} /></div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* LIVROS */}
+        <section className="row g-5">
+          <div className="col-lg-6">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="d-flex align-items-center gap-2">
+                <h2 className="section-title m-0">Livros Recomendados</h2>
+                <span className="count-badge">{topBooks.length}</span>
+              </div>
+              <Link href="/livros" className="see-all">Ver todos <i className="bi bi-arrow-right" /></Link>
+            </div>
+            <div className="d-flex flex-column gap-3">
+              {topBooks.map((w) => <BookRow key={w.id} work={w} />)}
+            </div>
+          </div>
+
+          <div className="col-lg-6">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="d-flex align-items-center gap-2">
+                <span className="accent-bar" />
+                <h2 className="section-title m-0">Livros Recém-Lançados</h2>
+                <span className="count-badge" style={{ fontSize: "0.65rem" }}>NOVO</span>
+              </div>
+              <Link href="/livros" className="see-all">Ver todos <i className="bi bi-arrow-right" /></Link>
+            </div>
+            <div className="d-flex flex-column gap-3">
+              {newBooks.map((w) => <BookRow key={w.id} work={w} />)}
+            </div>
+          </div>
+        </section>
       </main>
-    </div>
+    </>
   );
 }
