@@ -1,5 +1,24 @@
+
+# Variáveis de ambiente
 .env
-.env.local
+.env.*
+!.env.example
+**/.env
+**/.env.local
+
+# Python
 .venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node.js / Next.js
 node_modules/
 .next/
+out/
+.vercel/
+
+# Sistema operacional e editor
+.DS_Store
+Thumbs.db
+.vscode/
