@@ -1,13 +1,13 @@
 "use client";
 
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { initials, timeAgo } from "@/lib/format";
 import type { MyStatus, Review, Work } from "@/lib/types";
 
-export default function WorkDetailPage() {
+ function WorkDetailContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -294,5 +294,13 @@ export default function WorkDetailPage() {
         </div>
       </article>
     </div>
+  );
+}
+
+export default function WorkDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <WorkDetailContent />
+    </Suspense>
   );
 }
