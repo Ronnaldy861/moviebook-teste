@@ -194,10 +194,7 @@ export default function Home() {
       </main>
 
       {showAdd && (
-        <AddWorkModal
-          onClose={() => setShowAdd(false)}
-          onSuccess={loadWorks}
-        />
+  <AddWorkModal onClose={() => setShowAdd(false)} onCreated={loadWorks} />
       )}
     </>
   );

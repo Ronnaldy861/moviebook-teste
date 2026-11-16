@@ -18,7 +18,7 @@ export default function BookRow({ work }: { work: Work }) {
         <div>
           <div className="fw-semibold">{work.title}</div>
           <div className="small text-muted-mb">
-            {work.creator || work.author || work.year}
+            {work.creator || work.year}
           </div>
         </div>
 
@@ -30,7 +30,7 @@ export default function BookRow({ work }: { work: Work }) {
           )}
 
           <span className="rating">
-            {work.rating_avg && (
+            {work.rating_avg !== null && (
               <>
                 <i className="bi bi-star-fill me-1" />
                 {work.rating_avg.toFixed(1)}

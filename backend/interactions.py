@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, User, Work, Favorite, Rating
@@ -83,13 +84,15 @@ def rate_work(work_id):
         return jsonify({"error": "Obra não encontrada."}), 404
 
     data = request.get_json() or {}
-    comment = data.get("comment", "").strip()
+    comment = str(data.get("comment", "")).strip()
     try:
         score = int(data.get("score"))
     except (ValueError, TypeError):
-        return jsonify({"error": "A nota deve ser um número de 1 a 5."}), 400
-    if score < 1 or score > 5:
-        return jsonify({"error": "A nota deve ser de 1 a 5."}), 400
+        return jsonify({"error": "A nota deve ser um número de 0 a 10."}), 400
+    if score < 0 or score > 10:
+        return jsonify({"error": "A nota deve ser de 0 a 10."}), 400
+    if len(comment) > 500:
+        return jsonify({"error": "O comentário pode ter no máximo 500 caracteres."}), 400
 
     # se o usuário já avaliou, atualiza; senão, cria
     rating = Rating.query.filter_by(user_id=user_id, work_id=work_id).first()

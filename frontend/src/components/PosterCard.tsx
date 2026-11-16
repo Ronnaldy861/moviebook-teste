@@ -15,7 +15,7 @@ export default function PosterCard({ work }: { work: Work }) {
       </div>
       <div className="d-flex justify-content-between align-items-start mt-2 gap-2">
         <span className="fw-semibold small">{work.title}</span>
-        {work.rating_avg && (
+        {work.rating_avg !== null && (
           <span className="rating"><i className="bi bi-star-fill me-1" />{work.rating_avg.toFixed(1)}</span>
         )}
       </div>

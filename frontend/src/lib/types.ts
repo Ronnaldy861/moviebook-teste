@@ -1,4 +1,3 @@
-
 export interface User {
   id: number;
   name: string;
@@ -17,28 +16,29 @@ export interface Work {
   type: "filme" | "livro";
   synopsis: string | null;
   year: number | null;
-
-  // Novos campos
-  creator: string | null;
-  company: string | null;
-  length: number | null;
-  age_rating: string;
-
-  // Capa
   cover_url: string | null;
-
-  // Vários gêneros
-  genres: Genre[];
-  genre_ids: number[];
-
-  // Campos antigos mantidos temporariamente
-  author: string | null;
-  genre: string | null;
-  genre_id: number | null;
-
+  genre: string | null;       // gêneros juntos: "Ação / Drama"
+  genres: string[];           // nomes dos gêneros
+  genre_ids: number[];        // ids dos gêneros
+  creator: string | null;     // diretor ou autor
+  company: string | null;     // estúdio ou editora
+  length: number | null;      // minutos ou páginas
+  age_rating: string | null;
   created_by: number | null;
-
-  // Avaliações
   rating_avg: number | null;
   rating_count: number;
+}
+
+export interface Review {
+  id: number;
+  user_name: string;
+  score: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface MyStatus {
+  is_favorite: boolean;
+  my_score: number | null;
+  my_comment: string | null;
 }

@@ -48,7 +48,7 @@ def work_to_dict(work):
         "genre": ", ".join(genre.name for genre in work.genres),
         "genre_id": work.genre_id,
         "created_by": work.created_by,
-        "rating_avg": round(float(avg), 1) if avg else None,
+        "rating_avg": round(float(avg), 1) if avg is not None else None,
         "rating_count": total,
     }
 
