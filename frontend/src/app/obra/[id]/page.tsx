@@ -157,7 +157,10 @@ import type { MyStatus, Review, Work } from "@/lib/types";
               </div>
             )}
             <div className="d-flex flex-wrap gap-2 mt-2">
-              {work.genres.map((g) => <span key={g} className="meta-chip">{g}</span>)}
+              {(work.genres as unknown as (string | { name: string })[]).map((g) => {
+  const name = typeof g === "string" ? g : g.name;
+  return <span key={name} className="meta-chip">{name}</span>;
+})}
               {work.year && <span className="meta-chip">{work.year}</span>}
               {work.length && (
                 <span className="meta-chip">{work.length} {isMovie ? "min" : "págs."}</span>

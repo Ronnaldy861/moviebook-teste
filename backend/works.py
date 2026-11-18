@@ -20,38 +20,27 @@ def optional_int(value, field_name):
 
 
 def work_to_dict(work):
-    avg = db.session.query(func.avg(Rating.score)).filter_by(
-        work_id=work.id
-    ).scalar()
-
+    avg = db.session.query(func.avg(Rating.score)).filter_by(work_id=work.id).scalar()
     total = Rating.query.filter_by(work_id=work.id).count()
-
-    genres = [
-        {"id": genre.id, "name": genre.name}
-        for genre in work.genres
-    ]
-
+    genres = sorted(work.genres, key=lambda g: g.name)
     return {
         "id": work.id,
         "title": work.title,
         "type": work.type,
         "synopsis": work.synopsis,
         "year": work.year,
+        "cover_url": work.cover_url,
+        "genre": " / ".join(g.name for g in genres) or None,
+        "genres": [g.name for g in genres],
+        "genre_ids": [g.id for g in genres],
         "creator": work.creator,
         "company": work.company,
         "length": work.length,
-        "age_rating": work.age_rating or "Livre",
-        "author": work.author,
-        "cover_url": work.cover_url,
-        "genres": genres,
-        "genre_ids": [genre.id for genre in work.genres],
-        "genre": ", ".join(genre.name for genre in work.genres),
-        "genre_id": work.genre_id,
+        "age_rating": work.age_rating,
         "created_by": work.created_by,
         "rating_avg": round(float(avg), 1) if avg is not None else None,
         "rating_count": total,
     }
-
 
 @works_bp.route("/genres", methods=["GET"])
 def list_genres():
