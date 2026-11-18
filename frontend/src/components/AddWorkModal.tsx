@@ -3,27 +3,31 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { fileToDataUrl } from "@/lib/image";
-import type { Genre } from "@/lib/types";
+import type { Genre, Work } from "@/lib/types";
 
 const RATINGS = ["Livre", "10", "12", "15", "18"];
 
 interface Props {
+  work?: Work;                        // se vier, o modal edita essa obra
+  initialType?: "filme" | "livro";    // tipo inicial ao adicionar
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: () => void;              // chamado depois de criar OU salvar
 }
 
-export default function AddWorkModal({ onClose, onCreated }: Props) {
-  const [type, setType] = useState<"filme" | "livro">("filme");
-  const [cover, setCover] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [year, setYear] = useState("");
+export default function AddWorkModal({ work, initialType, onClose, onCreated }: Props) {
+  const editing = !!work;
+
+  const [type, setType] = useState<"filme" | "livro">(work?.type ?? initialType ?? "filme");
+  const [cover, setCover] = useState<string | null>(work?.cover_url || null);
+  const [title, setTitle] = useState(work?.title ?? "");
+  const [year, setYear] = useState(work?.year ? String(work.year) : "");
   const [genres, setGenres] = useState<Genre[]>([]);
-  const [genreIds, setGenreIds] = useState<number[]>([]);
-  const [synopsis, setSynopsis] = useState("");
-  const [creator, setCreator] = useState("");
-  const [company, setCompany] = useState("");
-  const [length, setLength] = useState("");
-  const [ageRating, setAgeRating] = useState("Livre");
+  const [genreIds, setGenreIds] = useState<number[]>(work?.genre_ids ?? []);
+  const [synopsis, setSynopsis] = useState(work?.synopsis ?? "");
+  const [creator, setCreator] = useState(work?.creator ?? "");
+  const [company, setCompany] = useState(work?.company ?? "");
+  const [length, setLength] = useState(work?.length ? String(work.length) : "");
+  const [ageRating, setAgeRating] = useState(work?.age_rating ?? "Livre");
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
@@ -70,8 +74,8 @@ export default function AddWorkModal({ onClose, onCreated }: Props) {
     setError("");
     setSending(true);
     try {
-      await api("/api/works", {
-        method: "POST",
+      await api(work ? `/api/works/${work.id}` : "/api/works", {
+        method: work ? "PUT" : "POST",
         body: JSON.stringify({
           type,
           title,
@@ -88,7 +92,7 @@ export default function AddWorkModal({ onClose, onCreated }: Props) {
       onCreated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao cadastrar a obra.");
+      setError(err instanceof Error ? err.message : "Erro ao salvar a obra.");
     } finally {
       setSending(false);
     }
@@ -103,10 +107,16 @@ export default function AddWorkModal({ onClose, onCreated }: Props) {
     >
       <form className="mb-modal" onSubmit={submit}>
         <header className="mb-modal-head">
-          <div className="eyebrow mb-1">● Novo item no catálogo</div>
-          <h2 className="serif fw-bold mb-1" style={{ fontSize: "1.9rem" }}>Adicionar obra</h2>
+          <div className="eyebrow mb-1">
+            ● {editing ? "Editar item" : "Novo item no catálogo"}
+          </div>
+          <h2 className="serif fw-bold mb-1" style={{ fontSize: "1.9rem" }}>
+            {editing ? "Editar obra" : "Adicionar obra"}
+          </h2>
           <p className="text-muted-mb small m-0">
-            Preencha as informações para organizar sua próxima descoberta.
+            {editing
+              ? "Atualize as informações da obra e salve as alterações."
+              : "Preencha as informações para organizar sua próxima descoberta."}
           </p>
           <button type="button" className="close-btn" onClick={onClose} aria-label="Fechar">
             <i className="bi bi-x-lg" />
@@ -116,10 +126,18 @@ export default function AddWorkModal({ onClose, onCreated }: Props) {
         <div className="mb-modal-body">
           <label className="form-label-mb d-block mb-2">Tipo de obra</label>
           <div className="d-flex gap-3 mb-4">
-            <button type="button" className={`type-btn ${isMovie ? "active" : ""}`} onClick={() => setType("filme")}>
+            <button
+              type="button" disabled={editing}
+              className={`type-btn ${isMovie ? "active" : ""}`}
+              onClick={() => setType("filme")}
+            >
               <i className="bi bi-film me-2" />Filme
             </button>
-            <button type="button" className={`type-btn ${!isMovie ? "active" : ""}`} onClick={() => setType("livro")}>
+            <button
+              type="button" disabled={editing}
+              className={`type-btn ${!isMovie ? "active" : ""}`}
+              onClick={() => setType("livro")}
+            >
               <i className="bi bi-book me-2" />Livro
             </button>
           </div>
@@ -281,7 +299,7 @@ export default function AddWorkModal({ onClose, onCreated }: Props) {
         <footer className="mb-modal-foot">
           <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-accent btn-glow" disabled={!title.trim() || sending}>
-            {sending ? "Salvando..." : "+ Adicionar ao catálogo"}
+            {sending ? "Salvando..." : editing ? "Salvar alterações" : "+ Adicionar ao catálogo"}
           </button>
         </footer>
       </form>

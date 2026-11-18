@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" });
@@ -15,9 +16,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" data-bs-theme="dark" className={`${inter.variable} ${serif.variable}`}>
+    <html
+      lang="pt-BR"
+      data-bs-theme="dark"
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${serif.variable}`}
+    >
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <FavoritesProvider>{children}</FavoritesProvider>
+        </AuthProvider>
       </body>
     </html>
   );
