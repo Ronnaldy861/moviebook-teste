@@ -563,3 +563,21 @@ body {
 .heart-inline { cursor: pointer; }
 .heart-inline.on { color: #ff5d7a !important; }
 .type-btn:disabled:not(.active) { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- gêneros ---------- */
+.seg-toggle {
+  display: inline-flex; gap: 4px; padding: 4px;
+  background: #090a12; border: 1px solid #14214f; border-radius: 14px;
+}
+.seg-btn {
+  border: 0; background: transparent; color: var(--mb-muted);
+  font-weight: 600; font-size: 0.9rem;
+  padding: 0.55rem 1.1rem; border-radius: 10px;
+}
+.seg-btn:hover { color: var(--mb-text); }
+.seg-btn.active {
+  background: var(--mb-accent); color: #fff;
+  box-shadow: 0 6px 18px rgba(26, 92, 255, 0.3);
+}
+.genre-section { margin-bottom: 3.5rem; }
+.genre-title { font-size: 1.35rem; font-weight: 600; }
