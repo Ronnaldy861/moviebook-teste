@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import SearchBox from "@/components/SearchBox";
 import { useAuth } from "@/context/AuthContext";
 
 const links = [
@@ -17,13 +18,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-
-  function search(e: React.FormEvent) {
-    e.preventDefault();
-    router.push(`/buscar?q=${encodeURIComponent(q)}`);
-  }
 
   function exit() {
     logout();
@@ -33,8 +28,14 @@ export default function Navbar() {
   return (
     <nav className="mb-nav">
       <div className="d-flex align-items-center gap-3 px-3 px-lg-4 py-2">
-        <Link href="/" className="serif fw-bold text-white text-decoration-none fs-5 me-2">
-          MovieBook
+        <Link href="/" className="d-flex align-items-center gap-2 text-decoration-none me-2">
+          <span
+            className="d-flex align-items-center justify-content-center"
+            style={{ width: 32, height: 32, borderRadius: 8, background: "var(--mb-accent)" }}
+          >
+            <i className="bi bi-journal-text text-white" />
+          </span>
+          <span className="serif fw-bold text-white fs-5">MovieBook</span>
         </Link>
 
         <div className="d-none d-lg-flex gap-1">
@@ -50,10 +51,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <form onSubmit={search} className="mb-search d-flex align-items-center gap-2 flex-grow-1 mx-lg-3" style={{ maxWidth: 520 }}>
-          <i className="bi bi-search text-muted-mb" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar e filtrar obras..." />
-        </form>
+        <SearchBox />
 
         <div className="ms-auto position-relative">
           {user ? (
